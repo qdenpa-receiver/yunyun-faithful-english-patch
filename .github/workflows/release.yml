@@ -113,11 +113,6 @@ jobs:
           sha256sum yunyun-faithful-english-patch-${GITHUB_REF_NAME}-windows-x64.exe \
             > yunyun-faithful-english-patch-${GITHUB_REF_NAME}-windows-x64.exe.sha256
 
-          sha256sum yunyun-faithful-english-patch-${GITHUB_REF_NAME}-linux-x64 \
-                    yunyun-faithful-english-patch-${GITHUB_REF_NAME}-macos-arm64 \
-                    yunyun-faithful-english-patch-${GITHUB_REF_NAME}-windows-x64.exe \
-            > SHA256SUMS.txt
-
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
