@@ -6,6 +6,9 @@ on:
       - "v*"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build patcher (${{ matrix.os }})
@@ -45,8 +48,19 @@ jobs:
           --onefile
           --name yunyun-faithful-english-patch
           --paths src
+          --collect-all UnityPy
           --add-data "${{ matrix.add_data }}"
           src/yunyun_faithful_english_patch/__main__.py
+
+      - name: Smoke test built patcher
+        shell: bash
+        run: |
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            ./dist/yunyun-faithful-english-patch.exe --self-test
+          else
+            chmod +x ./dist/yunyun-faithful-english-patch
+            ./dist/yunyun-faithful-english-patch --self-test
+          fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -56,3 +70,57 @@ jobs:
             dist/yunyun-faithful-english-patch
             dist/yunyun-faithful-english-patch.exe
           if-no-files-found: error
+
+  publish:
+    name: Publish GitHub release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Inspect downloaded artifacts
+        run: find release-artifacts -maxdepth 3 -type f -print
+
+      - name: Prepare release assets
+        run: |
+          set -euo pipefail
+
+          mkdir release
+
+          cp release-artifacts/yunyun-faithful-english-patch-linux/yunyun-faithful-english-patch \
+            release/yunyun-faithful-english-patch-${GITHUB_REF_NAME}-linux-x86_64
+
+          cp release-artifacts/yunyun-faithful-english-patch-macos/yunyun-faithful-english-patch \
+            release/yunyun-faithful-english-patch-${GITHUB_REF_NAME}-macos-arm64
+
+          cp release-artifacts/yunyun-faithful-english-patch-windows/yunyun-faithful-english-patch.exe \
+            release/yunyun-faithful-english-patch-${GITHUB_REF_NAME}-windows-x86_64.exe
+
+          cd release
+
+          sha256sum yunyun-faithful-english-patch-${GITHUB_REF_NAME}-linux-x86_64 \
+            > yunyun-faithful-english-patch-${GITHUB_REF_NAME}-linux-x86_64.sha256
+
+          sha256sum yunyun-faithful-english-patch-${GITHUB_REF_NAME}-macos-arm64 \
+            > yunyun-faithful-english-patch-${GITHUB_REF_NAME}-macos-arm64.sha256
+
+          sha256sum yunyun-faithful-english-patch-${GITHUB_REF_NAME}-windows-x86_64.exe \
+            > yunyun-faithful-english-patch-${GITHUB_REF_NAME}-windows-x86_64.exe.sha256
+
+          sha256sum yunyun-faithful-english-patch-${GITHUB_REF_NAME}-linux-x86_64 \
+                    yunyun-faithful-english-patch-${GITHUB_REF_NAME}-macos-arm64 \
+                    yunyun-faithful-english-patch-${GITHUB_REF_NAME}-windows-x86_64.exe \
+            > SHA256SUMS.txt
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          overwrite_files: true
+          files: release/*

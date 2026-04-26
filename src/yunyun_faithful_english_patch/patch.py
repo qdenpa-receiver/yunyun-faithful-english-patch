@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import argparse
+import importlib.resources
 from datetime import UTC, datetime
 from pathlib import Path
+
+import UnityPy
 
 from . import __version__
 from .constants import PROJECT_NAME, STRING_BUNDLE
@@ -43,6 +46,7 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Allow unknown target file hashes after all other sanity checks pass",
     )
+    parser.add_argument("--self-test", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     return parser
 
@@ -51,9 +55,20 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
+        if args.self_test:
+            return run_self_test(args)
         return run(args)
     except FaithfulPatchError as exc:
         parser.exit(2, f"error: {exc}\n")
+
+
+def run_self_test(args: argparse.Namespace) -> int:
+    if UnityPy.__name__ != "UnityPy":
+        raise AssertionError("Unexpected UnityPy import state")
+    importlib.resources.files("UnityPy.resources")
+    load_translations(args.translations)
+    print("Self-test passed.")
+    return 0
 
 
 def run(args: argparse.Namespace) -> int:
