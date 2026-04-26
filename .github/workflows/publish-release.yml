@@ -1,0 +1,149 @@
+name: Publish Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to build and publish, such as v0.1.0-alpha1"
+        required: true
+        type: string
+      prerelease:
+        description: "Mark the GitHub Release as a prerelease"
+        required: true
+        default: true
+        type: boolean
+
+jobs:
+  validate:
+    name: Validate release input
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.validate.outputs.tag }}
+
+    steps:
+      - id: validate
+        name: Validate tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${{ inputs.tag }}"
+          if [[ "${tag}" != v* ]]; then
+            echo "Release tag must start with 'v'." >&2
+            exit 1
+          fi
+          echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
+
+  build:
+    name: Build patcher (${{ matrix.os }})
+    needs: validate
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact: yunyun-faithful-english-patch-linux
+            add_data: translations:translations
+          - os: macos-latest
+            artifact: yunyun-faithful-english-patch-macos
+            add_data: translations:translations
+          - os: windows-latest
+            artifact: yunyun-faithful-english-patch-windows
+            add_data: translations;translations
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate.outputs.tag }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: python -m pip install -e ".[dev]"
+
+      - name: Check before build
+        run: |
+          python -m ruff check src .github/check_repository_files.py
+          python .github/check_repository_files.py
+
+      - name: Build patcher
+        run: >
+          python -m PyInstaller
+          --onefile
+          --name yunyun-faithful-english-patch
+          --paths src
+          --collect-all UnityPy
+          --add-data "${{ matrix.add_data }}"
+          src/yunyun_faithful_english_patch/__main__.py
+
+      - name: Smoke test built patcher
+        shell: bash
+        run: |
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            ./dist/yunyun-faithful-english-patch.exe --self-test
+          else
+            chmod +x ./dist/yunyun-faithful-english-patch
+            ./dist/yunyun-faithful-english-patch --self-test
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            dist/yunyun-faithful-english-patch
+            dist/yunyun-faithful-english-patch.exe
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub release
+    needs: [validate, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Inspect downloaded artifacts
+        run: find release-artifacts -maxdepth 3 -type f -print
+
+      - name: Prepare release assets
+        env:
+          RELEASE_TAG: ${{ needs.validate.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          mkdir release
+
+          cp release-artifacts/yunyun-faithful-english-patch-linux/yunyun-faithful-english-patch \
+            "release/yunyun-faithful-english-patch-${RELEASE_TAG}-linux-x64"
+
+          cp release-artifacts/yunyun-faithful-english-patch-macos/yunyun-faithful-english-patch \
+            "release/yunyun-faithful-english-patch-${RELEASE_TAG}-macos-arm64"
+
+          cp release-artifacts/yunyun-faithful-english-patch-windows/yunyun-faithful-english-patch.exe \
+            "release/yunyun-faithful-english-patch-${RELEASE_TAG}-windows-x64.exe"
+
+          cd release
+
+          sha256sum "yunyun-faithful-english-patch-${RELEASE_TAG}-linux-x64" \
+            > "yunyun-faithful-english-patch-${RELEASE_TAG}-linux-x64.sha256"
+
+          sha256sum "yunyun-faithful-english-patch-${RELEASE_TAG}-macos-arm64" \
+            > "yunyun-faithful-english-patch-${RELEASE_TAG}-macos-arm64.sha256"
+
+          sha256sum "yunyun-faithful-english-patch-${RELEASE_TAG}-windows-x64.exe" \
+            > "yunyun-faithful-english-patch-${RELEASE_TAG}-windows-x64.exe.sha256"
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.validate.outputs.tag }}
+          prerelease: ${{ inputs.prerelease }}
+          overwrite_files: true
+          files: release/*
