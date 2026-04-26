@@ -1,0 +1,23 @@
+Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
+
+The translation files, glossary files, editing notes, localization notes, review
+notes, and translated text in this project are licensed under the Creative
+Commons Attribution-NonCommercial-ShareAlike 4.0 International Public License.
+
+Canonical legal code:
+https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode
+
+Human-readable summary:
+https://creativecommons.org/licenses/by-nc-sa/4.0/
+
+Do not modify the text of the Creative Commons license itself. Any extra
+permissions, limitations, disclaimers, or project-specific notices should be
+placed in separate files, such as `RIGHTSHOLDER_PERMISSION.md` or `NOTICE.md`.
+
+This Creative Commons license applies only to this project's original
+translation/localization contributions. It does not license Yunyun Syndrome!? Rhythm Psychosis, its
+original assets, source-language text, characters, story, trademarks, code,
+music, artwork, fonts, audiovisual material, or any other material owned by the
+original rightsholder.

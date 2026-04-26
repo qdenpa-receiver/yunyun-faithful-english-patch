@@ -1,0 +1,70 @@
+# Yunyun Faithful English Patch
+
+A faithful English retranslation/restoration patch for **Yunyun Syndrome!? Rhythm Psychosis**, focused on preserving the Japanese source text's meaning, tone, references, internet-culture context, and character voice.
+
+This project does not include or redistribute game files. You must supply your own lawful copy of the game. This project is unofficial and is not affiliated with, endorsed by, or sponsored by the developer, publisher, platform, or rightsholder.
+
+The patcher replaces the shipped English locale with a faithful English script and UI translation.
+
+This project is an independent English retranslation from the Japanese source text. The official English localization was not used as a base text, translation memory, drafting source, or revision source. Short or formulaic lines may still match other English renderings, including the official localization, where the Japanese source naturally leads to the same ordinary English phrasing.
+
+Maintained by `qdenpa-receiver`.
+
+## Use The Patcher
+
+Download the release for your operating system and run it:
+
+```bash
+yunyun-faithful-english-patch
+```
+
+The patcher looks for common Steam install locations, including nearby `../Steam/steamapps/common/Yunyun_Syndrome/` and `../steamapps/common/Yunyun_Syndrome/` folders. You can also place the executable directly in the game root folder where `Yunyun_Syndrome.exe` is located.
+
+The patcher validates the game layout, checks the target files, creates backups under `Yunyun_Syndrome_Data/.yunyun_faithful_english_patch_backups/`, and updates the English locale in place.
+
+Useful options:
+
+```bash
+yunyun-faithful-english-patch --check
+yunyun-faithful-english-patch --dry-run
+yunyun-faithful-english-patch --restore
+yunyun-faithful-english-patch --game-root /path/to/Yunyun_Syndrome
+```
+
+Use `--force` only when patching a known-compatible game build whose file hashes differ from the expected build.
+
+## Build From Source
+
+```bash
+python -m venv .venv
+. .venv/bin/activate
+python -m pip install -e .
+```
+
+On Windows PowerShell:
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -e .
+```
+
+Then run the patcher from the game root folder:
+
+```bash
+yunyun-faithful-english-patch
+```
+
+## Translation Maintenance
+
+The extractor is included as a source tool for translation maintenance and is not packaged as a release executable:
+
+```bash
+python -m yunyun_faithful_english_patch.extract --game-root /path/to/game --out work/extracted
+```
+
+By default, the extractor writes shipped English rows, Japanese source rows, and local JSONL comparison reports against the committed English replacement translation. Use `--locale en` or `--locale ja` to extract only one locale. Extractor output is local working data and is excluded from releases.
+
+## Licensing
+
+Code and build scripts are MIT licensed. Project-created replacement translation content is licensed under CC-BY-NC-SA-4.0 with the additional rightsholder permission included in this repository. See `LICENSE.md`, `RIGHTSHOLDER_PERMISSION.md`, and `NOTICE.md`.

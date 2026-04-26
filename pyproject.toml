@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "yunyun-faithful-english-patch"
+version = "0.1.0a1"
+description = "Source package for the Yunyun Faithful English Patch."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT for code; CC-BY-NC-SA-4.0 for translation content" }
+authors = [
+  { name = "qdenpa-receiver", email = "qdenpa-receiver@proton.me" }
+]
+dependencies = [
+  "UnityPy>=1.25.0,<2",
+]
+
+[project.optional-dependencies]
+dev = [
+  "ruff>=0.6,<1",
+  "pyinstaller>=6,<7",
+]
+
+[project.scripts]
+yunyun-faithful-english-patch = "yunyun_faithful_english_patch.patch:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+yunyun_faithful_english_patch = ["py.typed"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
