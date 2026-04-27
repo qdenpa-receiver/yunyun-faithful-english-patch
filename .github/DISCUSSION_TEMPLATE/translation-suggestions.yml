@@ -35,6 +35,15 @@ body:
       required: true
 
   - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots / images
+      description: "Optional. Drag and drop or paste screenshots here. Crop to the relevant text/UI. Do not upload copied game files, modified game files, source script dumps, official localization text, or unrelated assets."
+      placeholder: "Paste or drag screenshots into this box. GitHub will insert Markdown image links automatically."
+    validations:
+      required: false
+
+  - type: textarea
     id: current_patch_text
     attributes:
       label: Current patch text

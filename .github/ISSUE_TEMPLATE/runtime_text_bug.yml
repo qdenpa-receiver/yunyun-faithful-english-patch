@@ -52,8 +52,9 @@ body:
   - type: textarea
     id: evidence
     attributes:
-      label: Screenshot or context
-      description: "Attach a screenshot or describe the visible runtime context. Do not attach game files."
+      label: Screenshots / runtime context
+      description: "Optional but strongly recommended. Drag and drop or paste screenshots showing the relevant text/UI problem. Crop to the relevant area. Do not upload copied game files, modified game files, source script dumps, official localization text, or unrelated assets."
+      placeholder: "Paste or drag screenshots into this box. GitHub will insert Markdown image links automatically. Also describe the scene/menu/context if needed."
     validations:
       required: false
 

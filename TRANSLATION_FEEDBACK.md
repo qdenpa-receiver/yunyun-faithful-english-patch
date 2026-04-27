@@ -14,6 +14,8 @@ Good translation suggestions include:
 - Japanese source explanation or reference, where relevant;
 - screenshot for runtime/UI issues.
 
+For screenshots, drag/drop or paste the image into the relevant GitHub form textbox; GitHub will insert a Markdown image link automatically.
+
 Do not submit:
 
 - official English localization text;
