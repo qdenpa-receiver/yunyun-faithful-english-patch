@@ -21,6 +21,7 @@ from .constants import (
     KNOWN_GAME_FILES,
     STATE_FILE,
     STRING_BUNDLE,
+    STRING_BUNDLE_STOCK_CATALOG_CRC,
 )
 from .errors import ValidationError
 
@@ -199,12 +200,39 @@ def assert_catalog_allows_local_bundle(catalog_bin: Path) -> None:
     data = catalog_bin.read_bytes()
     if STRING_BUNDLE.name.encode("utf-8") not in data:
         raise ValidationError("Addressables catalog does not reference the English string bundle")
-    crc_markers = (b"UseCrc", b"m_Crc", b"CRC", b"Crc")
-    if any(marker in data for marker in crc_markers):
+
+
+def patch_string_bundle_catalog_crc(catalog_bin: Path) -> bool:
+    data = bytearray(catalog_bin.read_bytes())
+    bundle_name = STRING_BUNDLE.name.encode("utf-8")
+    bundle_pos = bytes(data).find(bundle_name)
+    if bundle_pos < 0:
+        raise ValidationError("Addressables catalog does not reference the English string bundle")
+
+    old_crc = STRING_BUNDLE_STOCK_CATALOG_CRC.to_bytes(4, "little")
+    matches: list[int] = []
+    start = 0
+    blob = bytes(data)
+    while True:
+        pos = blob.find(old_crc, start)
+        if pos < 0:
+            break
+        matches.append(pos)
+        start = pos + 1
+
+    if not matches:
+        return False
+
+    nearby = [pos for pos in matches if abs(pos - bundle_pos) <= 4096]
+    if len(nearby) != 1:
         raise ValidationError(
-            "Addressables catalog appears to include CRC fields; refusing to patch without "
-            "catalog update support"
+            "Could not safely locate the English string bundle CRC in catalog.bin; "
+            f"found {len(matches)} possible stock-CRC matches"
         )
+
+    data[nearby[0] : nearby[0] + 4] = b"\x00\x00\x00\x00"
+    atomic_write_bytes(catalog_bin, bytes(data))
+    return True
 
 
 def check_known_hashes(
@@ -217,6 +245,7 @@ def check_known_hashes(
     targets = {
         "data.unity3d": paths.data_unity3d,
         STRING_BUNDLE.as_posix(): paths.string_bundle,
+        CATALOG_BIN.as_posix(): paths.catalog_bin,
     }
     for manifest_key, path in targets.items():
         info = KNOWN_GAME_FILES.get(manifest_key)
@@ -272,7 +301,7 @@ def ensure_backup(backup_dir: Path, target: Path) -> Path:
 
 def restore_backups(paths: GamePaths) -> list[Path]:
     restored: list[Path] = []
-    for target in (paths.data_unity3d, paths.string_bundle):
+    for target in (paths.data_unity3d, paths.string_bundle, paths.catalog_bin):
         backup = backup_path_for(paths.backup_dir, target)
         if backup.exists():
             shutil.copy2(backup, target)

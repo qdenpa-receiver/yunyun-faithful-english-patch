@@ -18,6 +18,7 @@ STRING_BUNDLE = (
     / "StandaloneWindows64"
     / "localization-string-tables-english(en)_assets_all.bundle"
 )
+STRING_BUNDLE_STOCK_CATALOG_CRC = 0x23F45A9C
 KNOWN_GAME_FILES = {
     "data.unity3d": {
         "sha256": "e7a27107dc53abff221b59d3cb31f719cb1457bd14991810f361137f4ca63f52",
@@ -26,6 +27,10 @@ KNOWN_GAME_FILES = {
     STRING_BUNDLE.as_posix(): {
         "sha256": "119f3e9180aa94aa4392c8c57a6e34ad98afc0463c953fd8c5b4660e1be93ba0",
         "size": 151129,
+    },
+    CATALOG_BIN.as_posix(): {
+        "sha256": "94a1bd2f69532cae24981df0189929223e2ddd100e702b402d9bcb685737ad69",
+        "size": 90183,
     },
 }
 BACKUP_DIR = DATA_DIR / ".yunyun_faithful_english_patch_backups"

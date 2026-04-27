@@ -8,10 +8,11 @@ from pathlib import Path
 import UnityPy
 
 from . import __version__
-from .constants import PROJECT_NAME, STRING_BUNDLE
+from .constants import CATALOG_BIN, PROJECT_NAME, STRING_BUNDLE
 from .errors import FaithfulPatchError
 from .game import (
     ensure_backup,
+    patch_string_bundle_catalog_crc,
     resolve_auto_game_paths,
     restore_backups,
     sha256_file,
@@ -102,6 +103,7 @@ def run(args: argparse.Namespace) -> int:
     if not args.dry_run:
         ensure_backup(paths.backup_dir, paths.data_unity3d)
         ensure_backup(paths.backup_dir, paths.string_bundle)
+        ensure_backup(paths.backup_dir, paths.catalog_bin)
 
     story_stats = patch_story_file(
         paths.data_unity3d,
@@ -114,8 +116,14 @@ def run(args: argparse.Namespace) -> int:
         dry_run=args.dry_run,
     )
 
+    catalog_crc_patched = False
+    if not args.dry_run:
+        catalog_crc_patched = patch_string_bundle_catalog_crc(paths.catalog_bin)
+
     print(story_stats.summary())
     print(string_stats.summary())
+    if catalog_crc_patched:
+        print("catalog: disabled stock CRC for English string-table bundle")
     if args.dry_run:
         print("Dry run complete; no files were changed.")
         return 0
@@ -134,6 +142,10 @@ def run(args: argparse.Namespace) -> int:
                 STRING_BUNDLE.as_posix(): {
                     "size": paths.string_bundle.stat().st_size,
                     "sha256": sha256_file(paths.string_bundle),
+                },
+                CATALOG_BIN.as_posix(): {
+                    "size": paths.catalog_bin.stat().st_size,
+                    "sha256": sha256_file(paths.catalog_bin),
                 },
             },
             "stats": {
