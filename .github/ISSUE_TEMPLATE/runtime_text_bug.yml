@@ -1,0 +1,68 @@
+name: Runtime text bug
+description: Report untranslated text, UI overflow, wrong displayed line, or other in-game text display problems.
+title: "[Runtime text] "
+labels: ["runtime-text-bug", "needs-review"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for concrete runtime text defects: untranslated text, UI overflow, wrong displayed lines, or text that clearly breaks in-game.
+
+        Ordinary wording suggestions should go to GitHub Discussions: Translation Suggestions. Do not paste official English localization text, copied game files, modified game files, or source-language script dumps.
+
+  - type: dropdown
+    id: bug_type
+    attributes:
+      label: Bug type
+      options:
+        - Untranslated string
+        - UI overflow / clipped text
+        - Wrong line appears in-game
+        - Text formatting problem
+        - Other runtime text issue
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: Location
+      description: "Best: table name and key. Otherwise give scene, menu, route, approximate timestamp, or exact visible context."
+      placeholder: "Options menu / YUNYUN_000_Prologue_000 / visible text excerpt"
+    validations:
+      required: true
+
+  - type: textarea
+    id: current_patch_text
+    attributes:
+      label: Current patch text or visible excerpt
+      description: "Paste only current patch text or a short visible excerpt needed to identify the line. Do not paste official English localization text."
+    validations:
+      required: false
+
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened?
+      description: "Describe the runtime problem and what makes it a defect."
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshot or context
+      description: "Attach a screenshot or describe the visible runtime context. Do not attach game files."
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: contribution_terms
+    attributes:
+      label: Contribution terms
+      options:
+        - label: "I am not submitting copied game files, modified game files, source-language script dumps, official localization text, or material I do not have the right to license."
+          required: true
+        - label: "I understand that my report text, screenshots, and other submitted evidence may be used under the repository's contribution terms."
+          required: true

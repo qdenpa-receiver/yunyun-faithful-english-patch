@@ -1,0 +1,78 @@
+name: Patcher or release bug
+description: Report a patcher crash, restore failure, hash problem, release artifact issue, or platform bug.
+title: "[Patch bug] "
+labels: ["patch-bug", "needs-review"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for patcher, packaging, restore, hash, or platform problems.
+
+        Do not upload copied game files, modified game files, source-language script dumps, or official localization text. Logs and screenshots are useful; keep them limited to what is needed to diagnose the issue.
+
+  - type: dropdown
+    id: bug_type
+    attributes:
+      label: Bug type
+      options:
+        - Patcher crash
+        - Restore failure
+        - Hash or compatible-build problem
+        - Release artifact problem
+        - Platform-specific problem
+        - Other patcher bug
+    validations:
+      required: true
+
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      placeholder: "Windows 11 / Steam Deck / macOS 14 / Ubuntu 24.04"
+    validations:
+      required: true
+
+  - type: input
+    id: patch_version
+    attributes:
+      label: Patch version or download
+      description: "Release tag, executable name, commit, or source install details."
+      placeholder: "v0.1.0a1 Windows release executable"
+    validations:
+      required: true
+
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened?
+      description: "Describe the failure and what you expected instead."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: "List the commands, buttons, folder layout, or patcher options involved."
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: "Paste relevant terminal output or attach screenshots. Do not attach game files."
+      render: text
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: contribution_terms
+    attributes:
+      label: Contribution terms
+      options:
+        - label: "I am not submitting copied game files, modified game files, source-language script dumps, official localization text, or material I do not have the right to license."
+          required: true
+        - label: "I understand that my report text, logs, screenshots, and other submitted evidence may be used under the repository's contribution terms."
+          required: true

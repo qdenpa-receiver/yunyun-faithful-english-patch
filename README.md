@@ -71,6 +71,12 @@ python -m yunyun_faithful_english_patch.extract --game-root /path/to/game --out 
 
 By default, the extractor writes shipped English rows, Japanese source rows, and local JSONL comparison reports against the committed English replacement translation. Use `--locale en` or `--locale ja` to extract only one locale. Extractor output is local working data and is excluded from releases.
 
+## Translation Feedback
+
+Translation suggestions are collected through GitHub Discussions so they can be reviewed, labeled, and checked against the Japanese source.
+
+Please read `TRANSLATION_FEEDBACK.md` before submitting wording suggestions, JP nuance corrections, proper-noun checks, typo reports, or runtime text reports. Use the [Translation Suggestions](https://github.com/qdenpa-receiver/yunyun-faithful-english-patch/discussions/categories/translation-suggestions) discussion category for ordinary translation feedback.
+
 ## Licensing
 
 Code and build scripts are MIT licensed. Project-created replacement translation content is licensed under CC-BY-NC-SA-4.0 with the additional rightsholder permission included in this repository. See `LICENSE.md`, `RIGHTSHOLDER_PERMISSION.md`, and `NOTICE.md`.
