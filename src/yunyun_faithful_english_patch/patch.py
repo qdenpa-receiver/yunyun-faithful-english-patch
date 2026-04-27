@@ -2,15 +2,19 @@ from __future__ import annotations
 
 import argparse
 import importlib.resources
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
 from . import __version__
 from .constants import CATALOG_BIN, PROJECT_NAME, STRING_BUNDLE
-from .errors import FaithfulPatchError
+from .errors import FaithfulPatchError, HashMismatchError
 from .game import (
+    GamePaths,
     ensure_backup,
+    file_matches_patch_state,
     patch_string_bundle_catalog_crc,
+    read_patch_state,
     resolve_auto_game_paths,
     restore_backups,
     sha256_file,
@@ -91,7 +95,7 @@ def run(args: argparse.Namespace) -> int:
             print("No backups found.")
         return 0
 
-    warnings = validate_game_root(paths, force=args.force)
+    warnings = validate_or_confirm_hashes(paths, force=args.force)
     for warning in warnings:
         print(f"warning: {warning}")
 
@@ -102,9 +106,26 @@ def run(args: argparse.Namespace) -> int:
     translations = load_translations(args.translations)
 
     if not args.dry_run:
-        ensure_backup(paths.backup_dir, paths.data_unity3d)
-        ensure_backup(paths.backup_dir, paths.string_bundle)
-        ensure_backup(paths.backup_dir, paths.catalog_bin)
+        state = read_patch_state(paths.backup_dir)
+        ensure_backup(
+            paths.backup_dir,
+            paths.data_unity3d,
+            refresh=not file_matches_patch_state(state, "data.unity3d", paths.data_unity3d),
+        )
+        ensure_backup(
+            paths.backup_dir,
+            paths.string_bundle,
+            refresh=not file_matches_patch_state(
+                state,
+                STRING_BUNDLE.as_posix(),
+                paths.string_bundle,
+            ),
+        )
+        ensure_backup(
+            paths.backup_dir,
+            paths.catalog_bin,
+            refresh=not file_matches_patch_state(state, CATALOG_BIN.as_posix(), paths.catalog_bin),
+        )
 
     story_stats = patch_story_file(
         paths.data_unity3d,
@@ -157,6 +178,26 @@ def run(args: argparse.Namespace) -> int:
     )
     print("Patch applied.")
     return 0
+
+
+def validate_or_confirm_hashes(paths: GamePaths, *, force: bool) -> list[str]:
+    try:
+        return validate_game_root(paths, force=force)
+    except HashMismatchError as exc:
+        if not confirm_hash_mismatch(exc):
+            raise
+        return validate_game_root(paths, force=True)
+
+
+def confirm_hash_mismatch(exc: HashMismatchError) -> bool:
+    print("warning: target file hashes are not recognized:", file=sys.stderr)
+    for mismatch in exc.mismatches:
+        print(f"  - {mismatch}", file=sys.stderr)
+    if not sys.stdin.isatty():
+        print("Non-interactive session; rerun with --force to continue.", file=sys.stderr)
+        return False
+    answer = input("Force patch anyway? [y/N] ").strip().lower()
+    return answer in {"y", "yes"}
 
 
 def stats_to_json(stats: object) -> dict[str, object]:

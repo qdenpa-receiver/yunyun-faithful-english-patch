@@ -25,7 +25,7 @@ from .constants import (
     STRING_BUNDLE,
     STRING_BUNDLE_STOCK_CATALOG_CRC,
 )
-from .errors import ValidationError
+from .errors import HashMismatchError, ValidationError
 
 STEAM_GAME_DIR = "Yunyun_Syndrome"
 
@@ -152,6 +152,13 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def file_identity(path: Path) -> dict[str, int | str]:
+    return {
+        "sha256": sha256_file(path),
+        "size": path.stat().st_size,
+    }
+
+
 def validate_game_root(
     paths: GamePaths,
     *,
@@ -244,6 +251,7 @@ def check_known_hashes(
     force: bool,
     warnings: list[str],
 ) -> None:
+    mismatches: list[str] = []
     targets = {
         "data.unity3d": paths.data_unity3d,
         STRING_BUNDLE.as_posix(): paths.string_bundle,
@@ -254,21 +262,35 @@ def check_known_hashes(
         if not info:
             warnings.append(f"No known hash for {manifest_key}")
             continue
-        size = path.stat().st_size
-        digest = sha256_file(path)
-        original_match = size == info.get("size") and digest == info.get("sha256")
+        identity = file_identity(path)
+        original_match = identity == info
         patched_match = bool(
             state
-            and state.get("patched_files", {}).get(manifest_key, {}).get("sha256") == digest
-            and state.get("patched_files", {}).get(manifest_key, {}).get("size") == size
+            and state.get("patched_files", {}).get(manifest_key, {}) == identity
         )
         if original_match or patched_match:
             continue
-        message = f"{manifest_key} hash is not a known original or patch output"
+        message = (
+            f"{manifest_key} hash is not a known original or patch output "
+            f"(size={identity['size']}, sha256={identity['sha256']})"
+        )
         if force:
             warnings.append(message + " (--force accepted)")
         else:
-            raise ValidationError(message + "; use --force only if this game version is expected")
+            mismatches.append(message)
+
+    if mismatches:
+        raise HashMismatchError(mismatches)
+
+
+def file_matches_patch_state(
+    state: dict[str, Any] | None,
+    manifest_key: str,
+    path: Path,
+) -> bool:
+    return bool(
+        state and state.get("patched_files", {}).get(manifest_key, {}) == file_identity(path)
+    )
 
 
 def read_patch_state(backup_dir: Path) -> dict[str, Any] | None:
@@ -293,10 +315,10 @@ def backup_path_for(backup_dir: Path, target: Path) -> Path:
     return backup_dir / f"{target.name}.orig"
 
 
-def ensure_backup(backup_dir: Path, target: Path) -> Path:
+def ensure_backup(backup_dir: Path, target: Path, *, refresh: bool = False) -> Path:
     backup_dir.mkdir(parents=True, exist_ok=True)
     backup_path = backup_path_for(backup_dir, target)
-    if not backup_path.exists():
+    if refresh or not backup_path.exists():
         shutil.copy2(target, backup_path)
     return backup_path
 

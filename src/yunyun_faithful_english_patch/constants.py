@@ -18,18 +18,18 @@ STRING_BUNDLE = (
     / "StandaloneWindows64"
     / "localization-string-tables-english(en)_assets_all.bundle"
 )
-STRING_BUNDLE_STOCK_CATALOG_CRC = 0x23F45A9C
+STRING_BUNDLE_STOCK_CATALOG_CRC = 0x2395DCDE
 KNOWN_GAME_FILES = {
     "data.unity3d": {
-        "sha256": "e7a27107dc53abff221b59d3cb31f719cb1457bd14991810f361137f4ca63f52",
-        "size": 549650621,
+        "sha256": "2a0937f78d3264f62ec2233c0844d32dd064e07192c68d37c47e9601131c5988",
+        "size": 551642177,
     },
     STRING_BUNDLE.as_posix(): {
-        "sha256": "119f3e9180aa94aa4392c8c57a6e34ad98afc0463c953fd8c5b4660e1be93ba0",
-        "size": 151129,
+        "sha256": "80dd16595e13e0c0fc134c38292320f0503f27ae2235c128917e0e43e2c64726",
+        "size": 151321,
     },
     CATALOG_BIN.as_posix(): {
-        "sha256": "94a1bd2f69532cae24981df0189929223e2ddd100e702b402d9bcb685737ad69",
+        "sha256": "acdf34549f8f5b96b4a5399a7991d15fd73db6780b3122f661d08f0207e193f0",
         "size": 90183,
     },
 }
