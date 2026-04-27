@@ -5,8 +5,6 @@ import importlib.resources
 from datetime import UTC, datetime
 from pathlib import Path
 
-import UnityPy
-
 from . import __version__
 from .constants import CATALOG_BIN, PROJECT_NAME, STRING_BUNDLE
 from .errors import FaithfulPatchError
@@ -64,6 +62,8 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def run_self_test(args: argparse.Namespace) -> int:
+    import UnityPy
+
     if UnityPy.__name__ != "UnityPy":
         raise AssertionError("Unexpected UnityPy import state")
     importlib.resources.files("UnityPy.resources")
@@ -74,7 +74,6 @@ def run_self_test(args: argparse.Namespace) -> int:
 
 def run(args: argparse.Namespace) -> int:
     paths, auto_discovered = resolve_auto_game_paths(args.game_root)
-    translations = load_translations(args.translations)
     if auto_discovered:
         print(f"Using game root: {paths.root}", flush=True)
 
@@ -99,6 +98,8 @@ def run(args: argparse.Namespace) -> int:
     if args.check:
         print("Game root sanity checks passed.")
         return 0
+
+    translations = load_translations(args.translations)
 
     if not args.dry_run:
         ensure_backup(paths.backup_dir, paths.data_unity3d)

@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
+from io import IOBase
 from pathlib import Path
 from typing import Any
 
 from .errors import PatchError
-from .game import atomic_write_bytes
+from .game import atomic_write_with_writer
 
 UNITY_PACKER = "original"
 
@@ -47,6 +48,52 @@ def textasset_table_name(name: str) -> str | None:
 
 def string_table_name(name: str) -> str | None:
     return name[:-3] if name.endswith("_en") else None
+
+
+def object_name(obj: object) -> str:
+    try:
+        name = obj.peek_name()
+    except Exception:
+        return ""
+    return str(name) if name else ""
+
+
+def save_bundle_to_handle(bundle: object, handle: IOBase, packer: str | tuple[int, int]) -> None:
+    from UnityPy.streams import EndianBinaryWriter
+
+    writer = EndianBinaryWriter(handle)
+    writer.write_string_to_null(bundle.signature)
+    writer.write_u_int(bundle.version)
+    writer.write_string_to_null(bundle.version_player)
+    writer.write_string_to_null(bundle.version_engine)
+
+    if bundle.signature == "UnityArchive":
+        raise NotImplementedError("BundleFile - UnityArchive")
+    if bundle.signature in ["UnityWeb", "UnityRaw"]:
+        if bundle.version == 6:
+            bundle.save_fs(writer, 64, 64)
+        else:
+            bundle.save_web_raw(writer)
+        return
+    if bundle.signature != "UnityFS":
+        raise NotImplementedError(f"Unknown Bundle signature: {bundle.signature}")
+
+    if not packer or packer == "none":
+        bundle.save_fs(writer, 64, 64)
+    elif packer == "original":
+        bundle.save_fs(
+            writer,
+            data_flag=bundle.dataflags,
+            block_info_flag=bundle._block_info_flags,
+        )
+    elif packer == "lz4":
+        bundle.save_fs(writer, data_flag=194, block_info_flag=2)
+    elif packer == "lzma":
+        bundle.save_fs(writer, data_flag=65, block_info_flag=1)
+    elif isinstance(packer, tuple):
+        bundle.save_fs(writer, *packer)
+    else:
+        raise NotImplementedError("UnityFS - Packer:", packer)
 
 
 def apply_story_payload(
@@ -146,25 +193,33 @@ def patch_story_file(
     for obj in env.objects:
         if getattr(obj.type, "name", "") != "TextAsset":
             continue
+        name = object_name(obj)
+        if name and textasset_table_name(name) not in story_translations:
+            continue
         try:
             data = obj.read()
         except Exception:
             continue
-        name = str(getattr(data, "name", "") or getattr(data, "m_Name", ""))
+        if not name:
+            name = str(getattr(data, "name", "") or getattr(data, "m_Name", ""))
         if textasset_table_name(name) not in story_translations:
             continue
         new_script, object_stats = apply_story_payload(name, data.m_Script, story_translations)
         stats.extend(object_stats)
         if object_stats.changed:
-            data.m_Script = new_script
-            data.save()
-            changed_objects += 1
+            if not dry_run:
+                data.m_Script = new_script
+                data.save()
+                changed_objects += 1
 
     stats.missing_tables.update(set(story_translations) - stats.tables_seen)
     raise_if_missing(stats)
 
     if not dry_run and changed_objects:
-        atomic_write_bytes(data_unity3d, env.file.save(packer=UNITY_PACKER))
+        atomic_write_with_writer(
+            data_unity3d,
+            lambda handle: save_bundle_to_handle(env.file, handle, UNITY_PACKER),
+        )
     return stats
 
 
@@ -183,6 +238,9 @@ def patch_string_bundle(
     for obj in env.objects:
         if getattr(obj.type, "name", "") != "MonoBehaviour":
             continue
+        name = object_name(obj)
+        if name and string_table_name(name) not in string_translations:
+            continue
         try:
             tree = obj.read_typetree()
         except Exception:
@@ -192,14 +250,18 @@ def patch_string_bundle(
         object_stats = apply_string_typetree(tree, string_translations)
         stats.extend(object_stats)
         if object_stats.changed:
-            obj.save_typetree(tree)
-            changed_objects += 1
+            if not dry_run:
+                obj.save_typetree(tree)
+                changed_objects += 1
 
     stats.missing_tables.update(set(string_translations) - stats.tables_seen)
     raise_if_missing(stats)
 
     if not dry_run and changed_objects:
-        atomic_write_bytes(string_bundle, env.file.save(packer=UNITY_PACKER))
+        atomic_write_with_writer(
+            string_bundle,
+            lambda handle: save_bundle_to_handle(env.file, handle, UNITY_PACKER),
+        )
     return stats
 
 

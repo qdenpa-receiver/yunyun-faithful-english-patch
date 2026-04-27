@@ -7,7 +7,9 @@ import platform
 import shutil
 import sys
 import tempfile
+from collections.abc import Callable
 from dataclasses import dataclass
+from io import IOBase
 from pathlib import Path
 from typing import Any
 
@@ -318,6 +320,21 @@ def atomic_write_bytes(path: Path, data: bytes) -> None:
     try:
         with os.fdopen(fd, "wb") as handle:
             handle.write(data)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp_name, path)
+    finally:
+        tmp = Path(tmp_name)
+        if tmp.exists():
+            tmp.unlink()
+
+
+def atomic_write_with_writer(path: Path, write_func: Callable[[IOBase], None]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    try:
+        with os.fdopen(fd, "wb") as handle:
+            write_func(handle)
             handle.flush()
             os.fsync(handle.fileno())
         os.replace(tmp_name, path)

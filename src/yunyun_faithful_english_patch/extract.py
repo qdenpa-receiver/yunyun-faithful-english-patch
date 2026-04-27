@@ -54,7 +54,6 @@ def main(argv: list[str] | None = None) -> int:
 
 def run(args: argparse.Namespace) -> int:
     paths = resolve_game_paths(args.game_root)
-    translations = load_translations()
     validate_game_root(paths, force=args.force)
     locales = parse_locales(args.locale)
 
@@ -78,6 +77,7 @@ def run(args: argparse.Namespace) -> int:
         print(f"Wrote {string_count} string rows to {strings_path}")
 
     if "ja" in locales:
+        translations = load_translations()
         story_comparison_path = args.out / "story.ja_vs_translation.en.jsonl"
         strings_comparison_path = args.out / "strings.ja_vs_translation.en.jsonl"
         story_count = write_jsonl(
