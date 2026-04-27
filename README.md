@@ -6,7 +6,7 @@ This project does not include or redistribute game files. You must supply your o
 
 The patcher replaces the shipped English locale with a faithful English script and UI translation.
 
-This project is an independent English retranslation from the Japanese source text. The official English localization was not used as a base text, translation memory, drafting source, or revision source. Short or formulaic lines may still match other English renderings, including the official localization, where the Japanese source naturally leads to the same ordinary English phrasing.
+This project is an independent English retranslation from the Japanese source text, with an explicit translation process designed to avoid bleed-through from the official English localization. The official English localization was not used as a base text, translation memory, drafting source, or revision source. Short or formulaic lines may still match other English renderings, including the official localization, where the Japanese source naturally leads to the same ordinary English phrasing.
 
 Maintained by `qdenpa-receiver`.
 
