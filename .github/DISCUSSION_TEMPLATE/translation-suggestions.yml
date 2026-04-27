@@ -1,0 +1,79 @@
+title: "[Translation suggestion] "
+labels: ["translation-suggestion", "needs-review"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve the patch.
+
+        Translation suggestions are reviewed against the Japanese source. Do not paste official English localization text, copied game files, modified game files, or source-language script dumps.
+
+        If you used machine translation, AI assistance, or translation-memory tooling while thinking through a suggestion, you are responsible for understanding, checking, editing, and licensing the final text you submit. Raw or unreviewed tool output is not useful for review.
+
+  - type: dropdown
+    id: suggestion_type
+    attributes:
+      label: Suggestion type
+      options:
+        - JP meaning / mistranslation
+        - Tone / character voice
+        - Proper noun / reference / song title
+        - Typo / grammar / readability
+        - UI overflow / runtime display issue
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: Line location
+      description: "Best: table name and key. Otherwise give the scene, menu, screenshot, or exact visible context."
+      placeholder: "YUNYUN_000_Prologue_000 / 70c96dee6ad1"
+    validations:
+      required: true
+
+  - type: textarea
+    id: current_patch_text
+    attributes:
+      label: Current patch text
+      description: "Paste only the current patch text or a short visible excerpt needed to identify the line. Do not paste official English localization text."
+    validations:
+      required: false
+
+  - type: textarea
+    id: suggested_text
+    attributes:
+      label: Suggested replacement
+      description: "Your proposed English wording. Keep it short and directly tied to the line being reported."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reasoning
+    attributes:
+      label: Reasoning
+      description: "Explain why this is better. For JP corrections, explain the Japanese grammar, wording, register, or context."
+    validations:
+      required: true
+
+  - type: textarea
+    id: references
+    attributes:
+      label: References / evidence
+      description: "Official pages, Japanese sources, dictionaries, song listings, runtime screenshots, timestamped context, or other evidence."
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: contribution_terms
+    attributes:
+      label: Contribution terms
+      options:
+        - label: "I am not submitting official localization text, copied game files, modified game files, source-language script dumps, or material I do not have the right to license."
+          required: true
+        - label: "I understand and take responsibility for the final text I submit, including any machine translation, AI assistance, or translation-memory tooling I used while preparing it."
+          required: true
+        - label: "I agree that my suggestion may be edited, rejected, or incorporated under the repository's contribution terms."
+          required: true
