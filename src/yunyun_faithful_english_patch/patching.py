@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import tempfile
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from io import IOBase
 from pathlib import Path
@@ -8,6 +10,12 @@ from typing import Any
 
 from .errors import PatchError
 from .game import atomic_write_with_writer
+from .unityfs import (
+    RESOURCE_ASSETS,
+    extract_unityfs_node,
+    parse_unityfs_metadata,
+    rebuild_unityfs_with_replacement,
+)
 
 UNITY_PACKER = "original"
 
@@ -184,13 +192,120 @@ def patch_story_file(
     *,
     dry_run: bool = False,
 ) -> PatchStats:
+    targeted_stats = try_patch_story_resources_node(
+        data_unity3d,
+        story_translations,
+        dry_run=dry_run,
+    )
+    if targeted_stats is not None:
+        return targeted_stats
+    return patch_story_file_with_unitypy(
+        data_unity3d,
+        story_translations,
+        dry_run=dry_run,
+    )
+
+
+def try_patch_story_resources_node(
+    data_unity3d: Path,
+    story_translations: dict[str, dict[str, str]],
+    *,
+    dry_run: bool,
+) -> PatchStats | None:
+    try:
+        metadata = parse_unityfs_metadata(data_unity3d)
+    except PatchError:
+        return None
+
+    if not any(node.path == RESOURCE_ASSETS for node in metadata.nodes):
+        return None
+
+    with tempfile.TemporaryDirectory(
+        prefix=f".{data_unity3d.name}.",
+        dir=data_unity3d.parent,
+    ) as tmp:
+        tmp_dir = Path(tmp)
+        resources_assets = tmp_dir / RESOURCE_ASSETS
+        patched_resources_assets = tmp_dir / f"{RESOURCE_ASSETS}.patched"
+        rebuilt_bundle = tmp_dir / data_unity3d.name
+
+        extract_unityfs_node(data_unity3d, metadata, RESOURCE_ASSETS, resources_assets)
+        stats, changed_objects = patch_story_serialized_file(
+            resources_assets,
+            patched_resources_assets,
+            story_translations,
+            dry_run=dry_run,
+        )
+        if dry_run or not changed_objects:
+            return stats
+
+        rebuild_unityfs_with_replacement(
+            source=data_unity3d,
+            metadata=metadata,
+            replacement_node_path=RESOURCE_ASSETS,
+            replacement=patched_resources_assets,
+            output=rebuilt_bundle,
+        )
+        atomic_write_with_writer(
+            data_unity3d,
+            lambda handle: copy_file_to_handle(rebuilt_bundle, handle),
+        )
+        return stats
+
+
+def patch_story_serialized_file(
+    source: Path,
+    output: Path,
+    story_translations: dict[str, dict[str, str]],
+    *,
+    dry_run: bool,
+) -> tuple[PatchStats, int]:
+    import UnityPy
+
+    env = UnityPy.load(str(source))
+    stats, changed_objects = patch_story_objects(
+        env.objects,
+        story_translations,
+        dry_run=dry_run,
+    )
+    if changed_objects and not dry_run:
+        output.write_bytes(env.file.save())
+    stats.missing_tables.update(set(story_translations) - stats.tables_seen)
+    raise_if_missing(stats)
+    return stats, changed_objects
+
+
+def patch_story_file_with_unitypy(
+    data_unity3d: Path,
+    story_translations: dict[str, dict[str, str]],
+    *,
+    dry_run: bool = False,
+) -> PatchStats:
     import UnityPy
 
     env = UnityPy.load(str(data_unity3d))
+    stats, changed_objects = patch_story_objects(env.objects, story_translations, dry_run=dry_run)
+
+    stats.missing_tables.update(set(story_translations) - stats.tables_seen)
+    raise_if_missing(stats)
+
+    if not dry_run and changed_objects:
+        atomic_write_with_writer(
+            data_unity3d,
+            lambda handle: save_bundle_to_handle(env.file, handle, UNITY_PACKER),
+        )
+    return stats
+
+
+def patch_story_objects(
+    objects: Iterable[object],
+    story_translations: dict[str, dict[str, str]],
+    *,
+    dry_run: bool,
+) -> tuple[PatchStats, int]:
     stats = PatchStats(target="story")
     changed_objects = 0
-
-    for obj in env.objects:
+    for obj in objects:
         if getattr(obj.type, "name", "") != "TextAsset":
             continue
         name = object_name(obj)
@@ -211,16 +326,16 @@ def patch_story_file(
                 data.m_Script = new_script
                 data.save()
                 changed_objects += 1
+    return stats, changed_objects
 
-    stats.missing_tables.update(set(story_translations) - stats.tables_seen)
-    raise_if_missing(stats)
 
-    if not dry_run and changed_objects:
-        atomic_write_with_writer(
-            data_unity3d,
-            lambda handle: save_bundle_to_handle(env.file, handle, UNITY_PACKER),
-        )
-    return stats
+def copy_file_to_handle(path: Path, handle: IOBase) -> None:
+    with path.open("rb") as source:
+        while True:
+            chunk = source.read(1024 * 1024)
+            if not chunk:
+                return
+            handle.write(chunk)
 
 
 def patch_string_bundle(
