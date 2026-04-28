@@ -1,8 +1,8 @@
 # Translation Feedback
 
-Use GitHub Discussions -> Translation Suggestions for wording suggestions, Japanese nuance corrections, proper-noun checks, typo/readability notes, and other translation feedback.
+Use GitHub Discussions -> Translation Suggestions for wording suggestions, Japanese nuance corrections, proper-noun checks, typo/readability notes, UI overflow, untranslated strings, and other translation feedback.
 
-Use Issues only for concrete patch or runtime defects, such as patcher crashes, restore failures, release artifact problems, untranslated strings, UI overflow, or wrong text appearing in-game.
+Use Issues only for concrete patch or runtime defects, such as patcher crashes, restore failures, release artifact problems, or wrong text appearing in-game.
 
 Good translation suggestions include:
 
