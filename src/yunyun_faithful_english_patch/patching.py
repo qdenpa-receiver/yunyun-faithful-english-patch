@@ -191,11 +191,13 @@ def patch_story_file(
     story_translations: dict[str, dict[str, str]],
     *,
     dry_run: bool = False,
+    jobs: int = 1,
 ) -> PatchStats:
     targeted_stats = try_patch_story_resources_node(
         data_unity3d,
         story_translations,
         dry_run=dry_run,
+        jobs=jobs,
     )
     if targeted_stats is not None:
         return targeted_stats
@@ -211,6 +213,7 @@ def try_patch_story_resources_node(
     story_translations: dict[str, dict[str, str]],
     *,
     dry_run: bool,
+    jobs: int = 1,
 ) -> PatchStats | None:
     try:
         metadata = parse_unityfs_metadata(data_unity3d)
@@ -229,7 +232,13 @@ def try_patch_story_resources_node(
         patched_resources_assets = tmp_dir / f"{RESOURCE_ASSETS}.patched"
         rebuilt_bundle = tmp_dir / data_unity3d.name
 
-        extract_unityfs_node(data_unity3d, metadata, RESOURCE_ASSETS, resources_assets)
+        extract_unityfs_node(
+            data_unity3d,
+            metadata,
+            RESOURCE_ASSETS,
+            resources_assets,
+            jobs=jobs,
+        )
         stats, changed_objects = patch_story_serialized_file(
             resources_assets,
             patched_resources_assets,
@@ -245,6 +254,7 @@ def try_patch_story_resources_node(
             replacement_node_path=RESOURCE_ASSETS,
             replacement=patched_resources_assets,
             output=rebuilt_bundle,
+            jobs=jobs,
         )
         atomic_write_with_writer(
             data_unity3d,

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.resources
+import os
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -48,6 +49,14 @@ def build_parser() -> argparse.ArgumentParser:
         "--force",
         action="store_true",
         help="Allow unknown target file hashes after all other sanity checks pass",
+    )
+    parser.add_argument(
+        "--jobs",
+        default="auto",
+        help=(
+            "Number of worker jobs for UnityFS block work; defaults to 'auto' "
+            "(up to 8)"
+        ),
     )
     parser.add_argument("--self-test", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -103,6 +112,10 @@ def run(args: argparse.Namespace) -> int:
         print("Game root sanity checks passed.")
         return 0
 
+    jobs = resolve_jobs(args.jobs)
+    if jobs > 1:
+        print(f"Using {jobs} UnityFS worker jobs.")
+
     translations = load_translations(args.translations)
 
     if not args.dry_run:
@@ -131,6 +144,7 @@ def run(args: argparse.Namespace) -> int:
         paths.data_unity3d,
         translations.story,
         dry_run=args.dry_run,
+        jobs=jobs,
     )
     string_stats = patch_string_bundle(
         paths.string_bundle,
@@ -198,6 +212,23 @@ def confirm_hash_mismatch(exc: HashMismatchError) -> bool:
         return False
     answer = input("Force patch anyway? [y/N] ").strip().lower()
     return answer in {"y", "yes"}
+
+
+def resolve_jobs(value: object) -> int:
+    if value is None:
+        return 1
+    text = str(value).strip().lower()
+    if not text:
+        return 1
+    if text == "auto":
+        return max(1, min(os.cpu_count() or 1, 8))
+    try:
+        jobs = int(text)
+    except ValueError as exc:
+        raise FaithfulPatchError("--jobs must be a positive integer or 'auto'") from exc
+    if jobs < 1:
+        raise FaithfulPatchError("--jobs must be a positive integer or 'auto'")
+    return jobs
 
 
 def stats_to_json(stats: object) -> dict[str, object]:
