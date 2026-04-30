@@ -3,7 +3,9 @@ from __future__ import annotations
 import os
 import re
 import tempfile
+from collections import deque
 from collections.abc import Callable, Iterator
+from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from io import IOBase
 from pathlib import Path
@@ -48,6 +50,12 @@ class UnityFsMetadata:
     block_info_need_padding_at_start: bool
     blocks: tuple[UnityFsBlock, ...]
     nodes: tuple[UnityFsNode, ...]
+
+
+@dataclass(frozen=True)
+class CompressedUnityFsBlock:
+    data: bytes
+    info: tuple[int, int, int]
 
 
 def parse_unityfs_metadata(path: Path) -> UnityFsMetadata:
@@ -144,10 +152,12 @@ def extract_unityfs_node(
     metadata: UnityFsMetadata,
     node_path: str,
     output: Path,
+    *,
+    jobs: int = 1,
 ) -> None:
     node = find_unityfs_node(metadata, node_path)
     with output.open("wb") as output_handle:
-        for chunk in iter_unityfs_node_chunks(source, metadata, node):
+        for chunk in iter_unityfs_node_chunks(source, metadata, node, jobs=jobs):
             output_handle.write(chunk)
 
     if output.stat().st_size != node.size:
@@ -161,6 +171,7 @@ def rebuild_unityfs_with_replacement(
     replacement_node_path: str,
     replacement: Path,
     output: Path,
+    jobs: int = 1,
 ) -> None:
     replacement_size = replacement.stat().st_size
     new_nodes: list[UnityFsNode] = []
@@ -179,6 +190,7 @@ def rebuild_unityfs_with_replacement(
         if node.path == replacement_node_path:
             node_streams.append(iter_file_chunks(replacement))
         else:
+            # Keep rebuild-side decompression serial; compression owns the worker pool here.
             node_streams.append(iter_unityfs_node_chunks(source, metadata, node))
         offset += size
 
@@ -197,6 +209,7 @@ def rebuild_unityfs_with_replacement(
             node_streams,
             block_info_flag=metadata.block_info_flags,
             compressed_output=compressed_path,
+            jobs=jobs,
         )
         block_data = build_unityfs_block_data(metadata, tuple(new_nodes), block_info)
         with output.open("wb") as handle:
@@ -217,18 +230,22 @@ def iter_unityfs_node_chunks(
     source: Path,
     metadata: UnityFsMetadata,
     node: UnityFsNode,
+    *,
+    jobs: int = 1,
 ) -> Iterator[bytes]:
-    node_start = node.offset
-    node_end = node.offset + node.size
-    uncompressed_offset = 0
-    with source.open("rb") as handle:
-        for index, block in enumerate(metadata.blocks):
-            block_start = uncompressed_offset
-            block_end = block_start + block.uncompressed_size
-            uncompressed_offset = block_end
-            if block_end <= node_start or block_start >= node_end:
-                continue
+    if jobs <= 1:
+        yield from iter_unityfs_node_chunks_serial(source, metadata, node)
+        return
+    yield from iter_unityfs_node_chunks_threaded(source, metadata, node, jobs=jobs)
 
+
+def iter_unityfs_node_chunks_serial(
+    source: Path,
+    metadata: UnityFsMetadata,
+    node: UnityFsNode,
+) -> Iterator[bytes]:
+    with source.open("rb") as handle:
+        for index, block, start, end in iter_unityfs_node_block_ranges(metadata, node):
             handle.seek(block.compressed_offset)
             data = decompress_unityfs_block(
                 handle.read(block.compressed_size),
@@ -236,9 +253,65 @@ def iter_unityfs_node_chunks(
                 block.flags,
                 index=index,
             )
-            start = max(node_start, block_start) - block_start
-            end = min(node_end, block_end) - block_start
             yield data[start:end]
+
+
+def iter_unityfs_node_chunks_threaded(
+    source: Path,
+    metadata: UnityFsMetadata,
+    node: UnityFsNode,
+    *,
+    jobs: int,
+) -> Iterator[bytes]:
+    pending_futures: deque[tuple[Future[bytes], int, int]] = deque()
+    max_pending = max(2, jobs * 2)
+
+    def drain_one() -> bytes:
+        future, start, end = pending_futures.popleft()
+        data = future.result()
+        return data[start:end]
+
+    with source.open("rb") as handle, ThreadPoolExecutor(max_workers=jobs) as executor:
+        for index, block, start, end in iter_unityfs_node_block_ranges(metadata, node):
+            handle.seek(block.compressed_offset)
+            compressed = handle.read(block.compressed_size)
+            pending_futures.append(
+                (
+                    executor.submit(
+                        decompress_unityfs_block,
+                        compressed,
+                        block.uncompressed_size,
+                        block.flags,
+                        index=index,
+                    ),
+                    start,
+                    end,
+                )
+            )
+            if len(pending_futures) >= max_pending:
+                yield drain_one()
+
+        while pending_futures:
+            yield drain_one()
+
+
+def iter_unityfs_node_block_ranges(
+    metadata: UnityFsMetadata,
+    node: UnityFsNode,
+) -> Iterator[tuple[int, UnityFsBlock, int, int]]:
+    node_start = node.offset
+    node_end = node.offset + node.size
+    uncompressed_offset = 0
+    for index, block in enumerate(metadata.blocks):
+        block_start = uncompressed_offset
+        block_end = block_start + block.uncompressed_size
+        uncompressed_offset = block_end
+        if block_end <= node_start or block_start >= node_end:
+            continue
+
+        start = max(node_start, block_start) - block_start
+        end = min(node_end, block_end) - block_start
+        yield index, block, start, end
 
 
 def iter_file_chunks(path: Path) -> Iterator[bytes]:
@@ -255,6 +328,7 @@ def compress_unityfs_node_streams(
     *,
     block_info_flag: int,
     compressed_output: Path,
+    jobs: int = 1,
 ) -> tuple[tuple[int, int, int], ...]:
     switch_value = block_info_flag & 0x3F
     switch = CompressionFlags(switch_value)
@@ -263,35 +337,63 @@ def compress_unityfs_node_streams(
     compress = CompressionHelper.COMPRESSION_MAP[switch]
 
     block_info: list[tuple[int, int, int]] = []
-    pending = bytearray()
     with compressed_output.open("wb") as output:
-        for chunks in node_streams:
-            for chunk in chunks:
-                view = memoryview(chunk)
-                while view:
-                    take = min(UNITYFS_CHUNK_SIZE - len(pending), len(view))
-                    pending.extend(view[:take])
-                    view = view[take:]
-                    if len(pending) == UNITYFS_CHUNK_SIZE:
-                        append_compressed_unityfs_block(
-                            bytes(pending),
-                            output,
-                            block_info,
-                            block_info_flag,
-                            switch_value,
-                            compress,
-                        )
-                        pending.clear()
-        if pending:
-            append_compressed_unityfs_block(
-                bytes(pending),
-                output,
-                block_info,
-                block_info_flag,
-                switch_value,
-                compress,
+        if jobs <= 1:
+            for block in iter_unityfs_payload_blocks(node_streams):
+                append_compressed_unityfs_block(
+                    block,
+                    output,
+                    block_info,
+                    block_info_flag,
+                    switch_value,
+                    compress,
+                )
+            return tuple(block_info)
+
+        pending_futures: deque[Future[CompressedUnityFsBlock]] = deque()
+        max_pending = max(2, jobs * 2)
+
+        def submit_block(data: bytes, executor: ThreadPoolExecutor) -> None:
+            pending_futures.append(
+                executor.submit(
+                    compress_unityfs_block_payload,
+                    data,
+                    block_info_flag=block_info_flag,
+                    switch_value=switch_value,
+                    compress=compress,
+                )
             )
+
+        def drain_one() -> None:
+            result = pending_futures.popleft().result()
+            write_compressed_unityfs_block(result, output, block_info)
+
+        with ThreadPoolExecutor(max_workers=jobs) as executor:
+            for block in iter_unityfs_payload_blocks(node_streams):
+                submit_block(block, executor)
+                if len(pending_futures) >= max_pending:
+                    drain_one()
+
+            while pending_futures:
+                drain_one()
     return tuple(block_info)
+
+
+def iter_unityfs_payload_blocks(node_streams: list[Iterator[bytes]]) -> Iterator[bytes]:
+    pending = bytearray()
+    for chunks in node_streams:
+        for chunk in chunks:
+            view = memoryview(chunk)
+            while view:
+                take = min(UNITYFS_CHUNK_SIZE - len(pending), len(view))
+                pending.extend(view[:take])
+                view = view[take:]
+                if len(pending) == UNITYFS_CHUNK_SIZE:
+                    block = bytes(pending)
+                    pending.clear()
+                    yield block
+    if pending:
+        yield bytes(pending)
 
 
 def append_compressed_unityfs_block(
@@ -302,13 +404,41 @@ def append_compressed_unityfs_block(
     switch_value: int,
     compress: Callable[[bytes], bytes],
 ) -> None:
+    result = compress_unityfs_block_payload(
+        data,
+        block_info_flag=block_info_flag,
+        switch_value=switch_value,
+        compress=compress,
+    )
+    write_compressed_unityfs_block(result, output, block_info)
+
+
+def compress_unityfs_block_payload(
+    data: bytes,
+    *,
+    block_info_flag: int,
+    switch_value: int,
+    compress: Callable[[bytes], bytes],
+) -> CompressedUnityFsBlock:
     compressed = compress(data)
     if len(compressed) > len(data):
-        output.write(data)
-        block_info.append((len(data), len(data), block_info_flag ^ switch_value))
-    else:
-        output.write(compressed)
-        block_info.append((len(data), len(compressed), block_info_flag))
+        return CompressedUnityFsBlock(
+            data=data,
+            info=(len(data), len(data), block_info_flag ^ switch_value),
+        )
+    return CompressedUnityFsBlock(
+        data=compressed,
+        info=(len(data), len(compressed), block_info_flag),
+    )
+
+
+def write_compressed_unityfs_block(
+    result: CompressedUnityFsBlock,
+    output: IOBase,
+    block_info: list[tuple[int, int, int]],
+) -> None:
+    output.write(result.data)
+    block_info.append(result.info)
 
 
 def build_unityfs_block_data(
