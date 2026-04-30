@@ -218,19 +218,38 @@ def patch_string_bundle_catalog_crc(catalog_bin: Path) -> bool:
     if bundle_pos < 0:
         raise ValidationError("Addressables catalog does not reference the English string bundle")
 
+    crc_offset = find_string_bundle_catalog_crc_offset(bytes(data), bundle_name, bundle_pos)
+    if crc_offset is None:
+        return False
+    if data[crc_offset : crc_offset + 4] == b"\x00\x00\x00\x00":
+        return False
+
+    data[crc_offset : crc_offset + 4] = b"\x00\x00\x00\x00"
+    atomic_write_bytes(catalog_bin, bytes(data))
+    return True
+
+
+def find_string_bundle_catalog_crc_offset(
+    data: bytes,
+    bundle_name: bytes,
+    bundle_pos: int,
+) -> int | None:
+    structured_offset = find_string_bundle_catalog_crc_offset_from_entry(data, bundle_name)
+    if structured_offset is not None:
+        return structured_offset
+
     old_crc = STRING_BUNDLE_STOCK_CATALOG_CRC.to_bytes(4, "little")
     matches: list[int] = []
     start = 0
-    blob = bytes(data)
     while True:
-        pos = blob.find(old_crc, start)
+        pos = data.find(old_crc, start)
         if pos < 0:
             break
         matches.append(pos)
         start = pos + 1
 
     if not matches:
-        return False
+        return None
 
     nearby = [pos for pos in matches if abs(pos - bundle_pos) <= 4096]
     if len(nearby) != 1:
@@ -238,10 +257,45 @@ def patch_string_bundle_catalog_crc(catalog_bin: Path) -> bool:
             "Could not safely locate the English string bundle CRC in catalog.bin; "
             f"found {len(matches)} possible stock-CRC matches"
         )
+    return nearby[0]
 
-    data[nearby[0] : nearby[0] + 4] = b"\x00\x00\x00\x00"
-    atomic_write_bytes(catalog_bin, bytes(data))
-    return True
+
+def find_string_bundle_catalog_crc_offset_from_entry(
+    data: bytes,
+    bundle_name: bytes,
+) -> int | None:
+    positions: list[int] = []
+    start = 0
+    while True:
+        pos = data.find(bundle_name, start)
+        if pos < 0:
+            break
+        positions.append(pos)
+        start = pos + 1
+
+    offsets: list[int] = []
+    for pos in positions:
+        bundle_end = pos + len(bundle_name)
+        hash_length_pos = bundle_end + 16
+        dependency_hash_pos = hash_length_pos + 4
+        crc_pos = dependency_hash_pos + 32 + 8
+        if crc_pos + 4 > len(data):
+            continue
+        if data[hash_length_pos : hash_length_pos + 4] != (32).to_bytes(4, "little"):
+            continue
+        dependency_hash = data[dependency_hash_pos : dependency_hash_pos + 32]
+        if not all(byte in b"0123456789abcdef" for byte in dependency_hash):
+            continue
+        offsets.append(crc_pos)
+
+    if not offsets:
+        return None
+    if len(offsets) != 1:
+        raise ValidationError(
+            "Could not safely locate the English string bundle CRC in catalog.bin; "
+            f"found {len(offsets)} possible catalog-entry matches"
+        )
+    return offsets[0]
 
 
 def check_known_hashes(
