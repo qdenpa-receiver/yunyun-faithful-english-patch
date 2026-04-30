@@ -10,7 +10,7 @@ This project is an independent English retranslation from the Japanese source te
 
 Maintained by `qdenpa-receiver`.
 
-## Use The Patcher
+## Using The Patcher
 
 Download the release for your operating system and run it:
 
