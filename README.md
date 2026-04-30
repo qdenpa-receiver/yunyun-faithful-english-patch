@@ -69,7 +69,7 @@ The extractor is included as a source tool for translation maintenance and is no
 python -m yunyun_faithful_english_patch.extract --game-root /path/to/game --out work/extracted
 ```
 
-By default, the extractor writes shipped English rows, Japanese source rows, and local JSONL comparison reports against the committed English replacement translation. Use `--locale en` or `--locale ja` to extract only one locale. Extractor output is local working data and is excluded from releases.
+By default, the extractor writes shipped English rows, Japanese source rows, and local JSONL comparison reports against the committed English replacement translation. String-table JSONL rows include both Unity entry IDs and localization keys. Use `--locale en` or `--locale ja` to extract only one locale. Extractor output is local working data and is excluded from releases.
 
 ## Translation Feedback
 
