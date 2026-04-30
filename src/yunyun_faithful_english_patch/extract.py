@@ -21,6 +21,10 @@ STRING_BUNDLE_BY_LOCALE = {
         "localization-string-tables-japanese(ja)_assets_all.bundle"
     ),
 }
+SHARED_ASSETS_BUNDLE = Path(
+    "Yunyun_Syndrome_Data/StreamingAssets/aa/StandaloneWindows64/"
+    "localization-assets-shared_assets_all.bundle"
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -56,6 +60,8 @@ def run(args: argparse.Namespace) -> int:
     paths = resolve_game_paths(args.game_root)
     validate_game_root(paths, force=args.force)
     locales = parse_locales(args.locale)
+    shared_bundle = shared_assets_bundle(paths.root)
+    string_key_maps = extract_string_key_maps(shared_bundle)
 
     args.out.mkdir(parents=True, exist_ok=True)
     story_rows_by_locale: dict[str, list[dict[str, Any]]] = {}
@@ -67,7 +73,7 @@ def run(args: argparse.Namespace) -> int:
         string_bundle = locale_string_bundle(paths.root, locale)
 
         story_rows = list(extract_story_rows(paths.data_unity3d, locale))
-        string_rows = list(extract_string_rows(string_bundle, locale))
+        string_rows = list(extract_string_rows(string_bundle, string_key_maps, locale))
         story_rows_by_locale[locale] = story_rows
         string_rows_by_locale[locale] = string_rows
 
@@ -130,6 +136,13 @@ def locale_string_bundle(game_root: Path, locale: str) -> Path:
     return path
 
 
+def shared_assets_bundle(game_root: Path) -> Path:
+    path = game_root / SHARED_ASSETS_BUNDLE
+    if not path.exists():
+        raise FaithfulPatchError(f"Missing shared localization bundle: {SHARED_ASSETS_BUNDLE}")
+    return path
+
+
 def write_jsonl(path: Path, rows: Iterable[dict[str, Any]]) -> int:
     count = 0
     with path.open("w", encoding="utf-8", newline="\n") as handle:
@@ -184,7 +197,11 @@ def extract_story_rows(data_unity3d: Path, locale: str) -> Iterable[dict[str, An
                     }
 
 
-def extract_string_rows(string_bundle: Path, locale: str) -> Iterable[dict[str, Any]]:
+def extract_string_rows(
+    string_bundle: Path,
+    string_keys: dict[str, dict[str, str]],
+    locale: str,
+) -> Iterable[dict[str, Any]]:
     import UnityPy
 
     env = UnityPy.load(str(string_bundle))
@@ -205,15 +222,50 @@ def extract_string_rows(string_bundle: Path, locale: str) -> Iterable[dict[str, 
         table_data = tree.get("m_TableData")
         if not isinstance(table_data, list):
             continue
+        key_by_entry_id = string_keys.get(table_name, {})
         for row in table_data:
             if isinstance(row, dict) and "m_Id" in row:
+                entry_id = str(row["m_Id"])
                 yield {
                     "domain": "strings",
                     "table_name": table_name,
-                    "entry_id": str(row["m_Id"]),
+                    "entry_id": entry_id,
+                    "key": key_by_entry_id.get(entry_id),
                     "locale": locale,
                     "text": row.get("m_Localized", ""),
                 }
+
+
+def extract_string_key_maps(shared_bundle: Path) -> dict[str, dict[str, str]]:
+    import UnityPy
+
+    env = UnityPy.load(str(shared_bundle))
+    table_keys: dict[str, dict[str, str]] = {}
+    for obj in env.objects:
+        if getattr(obj.type, "name", "") != "MonoBehaviour":
+            continue
+        try:
+            tree = obj.read_typetree()
+        except Exception:
+            continue
+        table_name = str(tree.get("m_TableCollectionName") or "")
+        if not table_name:
+            name = str(tree.get("m_Name") or "")
+            suffix = " Shared Data"
+            if name.endswith(suffix):
+                table_name = name[: -len(suffix)]
+        entries = tree.get("m_Entries")
+        if not table_name or not isinstance(entries, list):
+            continue
+
+        key_by_entry_id: dict[str, str] = {}
+        for entry in entries:
+            if not isinstance(entry, dict) or "m_Id" not in entry or "m_Key" not in entry:
+                continue
+            key_by_entry_id[str(entry["m_Id"])] = str(entry["m_Key"])
+        if key_by_entry_id:
+            table_keys[table_name] = key_by_entry_id
+    return table_keys
 
 
 def compare_story_rows(
@@ -278,12 +330,17 @@ def compare_string_rows(
         status = comparison_status(has_source, has_translation)
         if target_row is not None and not has_translation:
             status = "extra_target"
+        key = None
+        for row in (translation_row, source_row, target_row):
+            if row is not None and row.get("key"):
+                key = row.get("key")
+                break
         rows.append(
             {
                 "domain": "strings",
                 "table_name": table_name,
                 "entry_id": entry_id,
-                "key": translation_row.get("key") if translation_row else None,
+                "key": key,
                 "source_ja": source_row.get("text") if source_row else None,
                 "translation_en": translation_row.get("text") if translation_row else None,
                 "target_en": target_row.get("text") if target_row else None,
