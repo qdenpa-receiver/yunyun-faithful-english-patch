@@ -369,11 +369,39 @@ def backup_path_for(backup_dir: Path, target: Path) -> Path:
     return backup_dir / f"{target.name}.orig"
 
 
-def ensure_backup(backup_dir: Path, target: Path, *, refresh: bool = False) -> Path:
+def ensure_backup(
+    backup_dir: Path,
+    target: Path,
+    *,
+    manifest_key: str | None = None,
+    state: dict[str, Any] | None = None,
+    allow_unknown: bool = False,
+) -> Path:
     backup_dir.mkdir(parents=True, exist_ok=True)
     backup_path = backup_path_for(backup_dir, target)
-    if refresh or not backup_path.exists():
-        shutil.copy2(target, backup_path)
+    if backup_path.exists():
+        return backup_path
+    if manifest_key is not None:
+        known_identity = KNOWN_GAME_FILES.get(manifest_key)
+        known_original = known_identity is not None and file_identity(target) == known_identity
+        if not known_original and file_matches_patch_state(state, manifest_key, target):
+            raise ValidationError(
+                f"Cannot create a missing backup for {manifest_key} because the target file "
+                "already matches a previous patch output. Restore from existing backups or "
+                "from a clean Steam copy before rerunning the patcher."
+            )
+        if (
+            known_identity is not None
+            and not known_original
+            and not allow_unknown
+        ):
+            raise ValidationError(
+                f"Cannot create a backup for {manifest_key} because the current file is not "
+                "a known original. Restore from existing backups or from a clean Steam copy "
+                "before rerunning the patcher. --force accepts unknown compatible game builds, "
+                "but it does not overwrite existing backups."
+            )
+    shutil.copy2(target, backup_path)
     return backup_path
 
 

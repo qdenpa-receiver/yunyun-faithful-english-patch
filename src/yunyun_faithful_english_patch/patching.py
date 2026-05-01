@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import gc
 import json
+import shutil
 import tempfile
+import time
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from io import IOBase
@@ -223,11 +226,8 @@ def try_patch_story_resources_node(
     if not any(node.path == RESOURCE_ASSETS for node in metadata.nodes):
         return None
 
-    with tempfile.TemporaryDirectory(
-        prefix=f".{data_unity3d.name}.",
-        dir=data_unity3d.parent,
-    ) as tmp:
-        tmp_dir = Path(tmp)
+    tmp_dir = Path(tempfile.mkdtemp(prefix=f".{data_unity3d.name}.", dir=data_unity3d.parent))
+    try:
         resources_assets = tmp_dir / RESOURCE_ASSETS
         patched_resources_assets = tmp_dir / f"{RESOURCE_ASSETS}.patched"
         rebuilt_bundle = tmp_dir / data_unity3d.name
@@ -261,6 +261,8 @@ def try_patch_story_resources_node(
             lambda handle: copy_file_to_handle(rebuilt_bundle, handle),
         )
         return stats
+    finally:
+        cleanup_temp_dir_with_retry(tmp_dir)
 
 
 def patch_story_serialized_file(
@@ -272,17 +274,43 @@ def patch_story_serialized_file(
 ) -> tuple[PatchStats, int]:
     import UnityPy
 
-    env = UnityPy.load(str(source))
-    stats, changed_objects = patch_story_objects(
-        env.objects,
-        story_translations,
-        dry_run=dry_run,
-    )
-    if changed_objects and not dry_run:
-        output.write_bytes(env.file.save())
-    stats.missing_tables.update(set(story_translations) - stats.tables_seen)
-    raise_if_missing(stats)
-    return stats, changed_objects
+    env = UnityPy.load(source.read_bytes())
+    try:
+        stats, changed_objects = patch_story_objects(
+            env.objects,
+            story_translations,
+            dry_run=dry_run,
+        )
+        if changed_objects and not dry_run:
+            output.write_bytes(env.file.save())
+        stats.missing_tables.update(set(story_translations) - stats.tables_seen)
+        raise_if_missing(stats)
+        return stats, changed_objects
+    finally:
+        del env
+        gc.collect()
+
+
+def cleanup_temp_dir_with_retry(
+    path: Path,
+    *,
+    attempts: int = 8,
+    delay_seconds: float = 0.25,
+) -> None:
+    last_error: PermissionError | None = None
+    for attempt in range(attempts):
+        try:
+            shutil.rmtree(path)
+            return
+        except FileNotFoundError:
+            return
+        except PermissionError as exc:
+            last_error = exc
+            gc.collect()
+            if attempt + 1 < attempts:
+                time.sleep(delay_seconds * (attempt + 1))
+    if last_error is not None:
+        raise last_error
 
 
 def patch_story_file_with_unitypy(

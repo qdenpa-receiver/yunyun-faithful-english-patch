@@ -33,7 +33,8 @@ jobs:
 
       - name: Check before build
         run: |
-          python -m ruff check src .github/check_repository_files.py
+          python -m ruff check src tests .github/check_repository_files.py
+          python -m unittest discover -s tests
           python .github/check_repository_files.py
 
       - name: Build patcher

@@ -13,7 +13,6 @@ from .errors import FaithfulPatchError, HashMismatchError
 from .game import (
     GamePaths,
     ensure_backup,
-    file_matches_patch_state,
     patch_string_bundle_catalog_crc,
     read_patch_state,
     resolve_auto_game_paths,
@@ -120,24 +119,27 @@ def run(args: argparse.Namespace) -> int:
 
     if not args.dry_run:
         state = read_patch_state(paths.backup_dir)
+        allow_unknown_backup = bool(args.force or warnings)
         ensure_backup(
             paths.backup_dir,
             paths.data_unity3d,
-            refresh=not file_matches_patch_state(state, "data.unity3d", paths.data_unity3d),
+            manifest_key="data.unity3d",
+            state=state,
+            allow_unknown=allow_unknown_backup,
         )
         ensure_backup(
             paths.backup_dir,
             paths.string_bundle,
-            refresh=not file_matches_patch_state(
-                state,
-                STRING_BUNDLE.as_posix(),
-                paths.string_bundle,
-            ),
+            manifest_key=STRING_BUNDLE.as_posix(),
+            state=state,
+            allow_unknown=allow_unknown_backup,
         )
         ensure_backup(
             paths.backup_dir,
             paths.catalog_bin,
-            refresh=not file_matches_patch_state(state, CATALOG_BIN.as_posix(), paths.catalog_bin),
+            manifest_key=CATALOG_BIN.as_posix(),
+            state=state,
+            allow_unknown=allow_unknown_backup,
         )
 
     story_stats = patch_story_file(
