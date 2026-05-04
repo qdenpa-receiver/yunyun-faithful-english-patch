@@ -15600,11 +15600,11 @@
     },
     "385849608025309184": {
       "key": "UITitle/YunYun/Message1",
-      "text": "> Yunyun Haaah~~! A hopeless denpa shortage-yun!"
+      "text": "> Yunyun\nHaaah~~! A hopeless denpa shortage-yun!"
     },
     "385849608025309185": {
       "key": "UITitle/YunYun/Message2",
-      "text": "> Yunyun Wawah! It broke-yun! Try checking LOAD DREAM-yun!!"
+      "text": "> Yunyun\nWawah! It broke-yun! Try checking LOAD DREAM-yun!!"
     },
     "385884829454073856": {
       "key": "UITitle/StartError",
@@ -15624,7 +15624,7 @@
     },
     "385903467410128899": {
       "key": "UITitle/YunYun/ExtraMessage",
-      "text": "> Yunyun It's a special page-yun!"
+      "text": "> Yunyun\nIt's a special page-yun!"
     },
     "385903467426906112": {
       "key": "UISaveLoad/AutoSave",
@@ -15652,15 +15652,15 @@
     },
     "400535952903274496": {
       "key": "UITitle/YunYun/Message3",
-      "text": "> Yunyun Raise the denpa even higher-yun!"
+      "text": "> Yunyun\nRaise the denpa even higher-yun!"
     },
     "400535952945217536": {
       "key": "UITitle/YunYun/Message4",
-      "text": "> Yunyun I have to send this feeling to Q-chan...!"
+      "text": "> Yunyun\nI have to send this feeling to Q-chan...!"
     },
     "400535952945217537": {
       "key": "UITitle/YunYun/Message5",
-      "text": "> Yunyun Yunyuuun!"
+      "text": "> Yunyun\nYunyuuun!"
     },
     "402137850064306176": {
       "key": "UITitle/Extra/Back",
@@ -15684,23 +15684,23 @@
     },
     "402250472981954560": {
       "key": "UISetting/Message1",
-      "text": "> Yunyun Tinker with the settings-yun!"
+      "text": "> Yunyun\nTinker with the settings-yun!"
     },
     "402250473019703296": {
       "key": "UISetting/Message1End",
-      "text": "> Yunyun Tinker with the settings-yun! Use this as a reference for text speed-yun."
+      "text": "> Yunyun\nTinker with the settings-yun! Use this as a reference for text speed-yun."
     },
     "402250473019703297": {
       "key": "UISetting/Message2",
-      "text": "> Yunyun Ride the rhythm-yun!"
+      "text": "> Yunyun\nRide the rhythm-yun!"
     },
     "402250473019703298": {
       "key": "UISetting/Message3",
-      "text": "> Yunyun Key config-yun."
+      "text": "> Yunyun\nKey config-yun."
     },
     "402250473019703299": {
       "key": "UISetting/Message4",
-      "text": "> Yunyun It's in English right now-yun!"
+      "text": "> Yunyun\nIt's in English right now-yun!"
     },
     "402250473019703300": {
       "key": "UISetting/System/SystemTitle",
@@ -17248,75 +17248,75 @@
     },
     "486669372439560192": {
       "key": "UITitle/YunYun/Title_010_001/01_01",
-      "text": "> Yunyun ...Q-chan's heart broke from the shock-yun..."
+      "text": "> Yunyun\n...Q-chan's heart broke from the shock-yun..."
     },
     "486669372481503232": {
       "key": "UITitle/YunYun/Title_010_002/01_01",
-      "text": "> Yunyun ...Reality is full of painful things-yun..."
+      "text": "> Yunyun\n...Reality is full of painful things-yun..."
     },
     "486669372481503233": {
       "key": "UITitle/YunYun/Title_010_003/01_01",
-      "text": "> Yunyun ...To deliver Yunyun's denpa to Q-chan's heart..."
+      "text": "> Yunyun\n...To deliver Yunyun's denpa to Q-chan's heart..."
     },
     "486669372481503234": {
       "key": "UITitle/YunYun/Title_010_004/01_01",
-      "text": "> Yunyun ...Q-chan, Q-chan, Q-chan. Q-chan, Q-chan, Q-chan..."
+      "text": "> Yunyun\n...Q-chan, Q-chan, Q-chan. Q-chan, Q-chan, Q-chan..."
     },
     "486669372481503235": {
       "key": "UITitle/YunYun/Title_010_005/01_01",
-      "text": "> Yunyun It's okay to run away into delusions, or into fiction-yun. As long as Q-chan stays alive..."
+      "text": "> Yunyun\nIt's okay to run away into delusions, or into fiction-yun. As long as Q-chan stays alive..."
     },
     "486669372481503236": {
       "key": "UITitle/YunYun/Title_010_006/01_01",
-      "text": "> Yunyun 100 percent exceeded. Wait for me, Q-chan."
+      "text": "> Yunyun\n100 percent exceeded. Wait for me, Q-chan."
     },
     "486669372481503237": {
       "key": "UITitle/YunYun/Title_000_000/01_01",
-      "text": "> Yunyun Yunyun has existed to help Q-chan's heart-yun!"
+      "text": "> Yunyun\nYunyun has existed to help Q-chan's heart-yun!"
     },
     "486669372481503238": {
       "key": "UITitle/YunYun/Title_000_000/02_01",
-      "text": "> Yunyun Ehehe. Today is Yunyun's birthday-yun."
+      "text": "> Yunyun\nEhehe. Today is Yunyun's birthday-yun."
     },
     "486669372481503239": {
       "key": "UITitle/YunYun/Title_000_000/03_01",
-      "text": "> Yunyun Happy birthday! Today is Q-chan's birthday-yun!"
+      "text": "> Yunyun\nHappy birthday! Today is Q-chan's birthday-yun!"
     },
     "486669372481503240": {
       "key": "UITitle/YunYun/Title_000_000/04_01",
-      "text": "> Yunyun Happy New Year-yun!"
+      "text": "> Yunyun\nHappy New Year-yun!"
     },
     "486669372481503241": {
       "key": "UITitle/YunYun/Title_000_000/05_01",
-      "text": "> Yunyun Happy Christmas-yun! Riajuu should explode-yun."
+      "text": "> Yunyun\nHappy Christmas-yun! Riajuu should explode-yun."
     },
     "486669372481503242": {
       "key": "UITitle/YunYun/Title_000_000/06_01",
-      "text": "> Yunyun ...Why is Yunyun the only one here...?"
+      "text": "> Yunyun\n...Why is Yunyun the only one here...?"
     },
     "486669372481503243": {
       "key": "UITitle/YunYun/Title_000_000/06_02",
-      "text": "> Yunyun ...Even though we promised we'd always be together..."
+      "text": "> Yunyun\n...Even though we promised we'd always be together..."
     },
     "486669372481503244": {
       "key": "UITitle/YunYun/Title_000_000/06_03",
-      "text": "> Yunyun ...This place is... I see... Inside Q-chan's... broken mind..."
+      "text": "> Yunyun\n...This place is... I see... Inside Q-chan's... broken mind..."
     },
     "486669372481503245": {
       "key": "UITitle/YunYun/Title_000_000/06_04",
-      "text": "> Yunyun ...From the very beginning, all of it was Yunyun's memories... The Yunyun delusion Q-chan was seeing inside her head."
+      "text": "> Yunyun\n...From the very beginning, all of it was Yunyun's memories... The Yunyun delusion Q-chan was seeing inside her head."
     },
     "486669372481503246": {
       "key": "UITitle/YunYun/Title_000_000/06_05",
-      "text": "> Yunyun ...Yunyun Denpa Syndrome..."
+      "text": "> Yunyun\n...Yunyun Denpa Syndrome..."
     },
     "486669372481503247": {
       "key": "UITitle/YunYun/Title_000_000/07_01",
-      "text": "> Yunyun With this, Yunyun can connect denpa with Q-chan again while staying the Yunyun who knows nothing-yun..."
+      "text": "> Yunyun\nWith this, Yunyun can connect denpa with Q-chan again while staying the Yunyun who knows nothing-yun..."
     },
     "486669372481503248": {
       "key": "UITitle/YunYun/Title_000_000/07_02",
-      "text": "> Yunyun Rim de Lacent."
+      "text": "> Yunyun\nRim de Lacent."
     },
     "486669372498280448": {
       "key": "Diary/Diary_001",
@@ -17372,27 +17372,27 @@
     },
     "488711951800762368": {
       "key": "UITitle/YunYun/Title_010_001/01_02",
-      "text": "> Yunyun ...That's why... Yunyun..."
+      "text": "> Yunyun\n...That's why... Yunyun..."
     },
     "488711951834316800": {
       "key": "UITitle/YunYun/Title_010_002/01_02",
-      "text": "> Yunyun ...So, in the world of fiction, I want Q-chan to smile, even just a little-yun..."
+      "text": "> Yunyun\n...So, in the world of fiction, I want Q-chan to smile, even just a little-yun..."
     },
     "488711951834316801": {
       "key": "UITitle/YunYun/Title_010_003/01_02",
-      "text": "> Yunyun ...Halfway left..."
+      "text": "> Yunyun\n...Halfway left..."
     },
     "488711951834316802": {
       "key": "UITitle/YunYun/Title_010_004/01_02",
-      "text": "> Yunyun It’s okay. It will absolutely be okay. At least Yunyun will never leave Q-chan alone-yun"
+      "text": "> Yunyun\nIt’s okay. It will absolutely be okay. At least Yunyun will never leave Q-chan alone-yun"
     },
     "488711951834316803": {
       "key": "UITitle/YunYun/Title_010_005/01_02",
-      "text": "> Yunyun ——A reality that makes Q-chan sad can just go all spinny-yun."
+      "text": "> Yunyun\n——A reality that makes Q-chan sad can just go all spinny-yun."
     },
     "488711951834316804": {
       "key": "UITitle/YunYun/Title_010_006/01_02",
-      "text": "> Yunyun I'll deliver the denpa-yun."
+      "text": "> Yunyun\nI'll deliver the denpa-yun."
     },
     "488711951867871232": {
       "key": "QLogos/QLogos_Title_00",
@@ -17948,19 +17948,19 @@
     },
     "496681509815746561": {
       "key": "UITitle/YunYun/Title_020_010/01_01",
-      "text": "> Yunyun ...“Recovery”...? Does that mean returning this world's Denpa Level to how it was?"
+      "text": "> Yunyun\n...“Recovery”...? Does that mean returning this world's Denpa Level to how it was?"
     },
     "496681509815746562": {
       "key": "UITitle/YunYun/Title_020_010/01_02",
-      "text": "> Yunyun ...These memories of Yunyun's too...?"
+      "text": "> Yunyun\n...These memories of Yunyun's too...?"
     },
     "496681509815746563": {
       "key": "UITitle/YunYun/Title_020_010/01_03",
-      "text": "> Yunyun If I can dokidoki with Q-chan as the me who knows nothing..."
+      "text": "> Yunyun\nIf I can dokidoki with Q-chan as the me who knows nothing..."
     },
     "496681509815746564": {
       "key": "UITitle/YunYun/Title_020_010/01_04",
-      "text": "> Yunyun ——It might be a happy dream-illusion hell-yun."
+      "text": "> Yunyun\n——It might be a happy dream-illusion hell-yun."
     },
     "496795839752208384": {
       "key": "UISNS/Level1",
@@ -19932,7 +19932,7 @@
     },
     "506932830615535616": {
       "key": "UITitle/YunYun/Title_000_000/other",
-      "text": "> Yunyun ..."
+      "text": "> Yunyun\n..."
     },
     "506932830716198912": {
       "key": "Export/All/Dialog",
