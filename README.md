@@ -35,7 +35,7 @@ Use `--force` only when patching a known-compatible game build whose file hashes
 
 ## Platform Testing Status
 
-The release executables are built by GitHub Actions. Windows and macOS builds have not yet been tested in a live game environment, and should be treated as experimental until successful patch and restore behavior is confirmed on those platforms.
+The release executables are built by GitHub Actions. Windows patch and restore behavior has been live-tested. macOS builds are smoke-tested in CI but still need live game validation.
 
 Back up your game files before patching.
 

@@ -38,7 +38,7 @@ body:
     attributes:
       label: Patch version or download
       description: "Release tag, executable name, commit, or source install details."
-      placeholder: "v0.1.0a1 Windows release executable"
+      placeholder: "v0.2.0 Windows release executable"
     validations:
       required: true
 

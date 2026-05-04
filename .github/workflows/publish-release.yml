@@ -4,13 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to build and publish, such as v0.1.0-alpha1"
+        description: "Release tag to build and publish, such as v0.2.0"
         required: true
         type: string
       prerelease:
         description: "Mark the GitHub Release as a prerelease"
         required: true
-        default: true
+        default: false
         type: boolean
 
 jobs:
